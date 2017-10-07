@@ -28,7 +28,7 @@ import xobot.script.wrappers.interactive.GameObject;
 import xobot.script.wrappers.interactive.NPC;
 
 @Manifest(authors = {
-		"Death Dead" }, name = "DD's Store Buyer", version = 1.0, description = "Buys items from stores in ::skill")
+		"Death Dead" }, name = "DD's Shop Buyer", version = 1.0, description = "Buys items from stores in ::skill")
 public class ShopBuyer extends ActiveScript implements PaintListener, MessageListener {
 
 	private int NPCid = 0;
