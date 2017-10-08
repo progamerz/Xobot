@@ -28,7 +28,7 @@ import xobot.script.wrappers.interactive.GameObject;
 import xobot.script.wrappers.interactive.NPC;
 
 @Manifest(authors = {
-		"Death Dead" }, name = "DD's Shop Buyer", version = 1.0, description = "Buys items from stores in ::skill")
+		"Death Dead" }, name = "DD's Store Buyer", version = 1.1, description = "Buys items from stores in ::skill")
 public class ShopBuyer extends ActiveScript implements PaintListener, MessageListener {
 
 	private int NPCid = 0;
@@ -59,7 +59,7 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 		combo.setPreferredSize(new Dimension(150, 30));
 		combo.setFocusable(false);
 		loadHerbloreStore();
-		
+
 		JCheckBox skillingStore = new JCheckBox("Skilling Store");
 		skillingStore.setPreferredSize(new Dimension(150, 30));
 		skillingStore.addActionListener(new ActionListener() {
@@ -72,7 +72,7 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 				}
 			}
 		});
-		
+
 		JButton button = new JButton("Start");
 		button.setFocusable(false);
 		button.setPreferredSize(new Dimension(60, 30));
@@ -201,7 +201,7 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 		if (Inventory.isFull()) {
 			bank();
 		} else {
-				buy();
+			buy();
 		}
 		return 0;
 	}
@@ -212,7 +212,7 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 		int perHour = (int) ((itemsBought) * 3600000D / (runTime));
 		int x = 10, y = 20;
 		g.setColor(color);
-		g.drawString("DD's Shop Buyer v1.0", x, y);
+		g.drawString("DD's Shop Buyer v1.1", x, y);
 		g.drawString("Runtime: " + formatTimeDHMS(runTime), x, y += 15);
 		g.drawString(itemtype + "(s) Bought: " + itemsBought + "(" + perHour + ")", x, y += 15);
 	}
@@ -276,7 +276,7 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 				itemsBought += Inventory.getCount(Itemid) - am;
 			} else {
 				Tile t1 = new Tile(2345, 3807);
-				Tile t2 = new Tile(2347, 3807);
+				Tile t2 = new Tile(2347, 3806);
 				NPC Shop = NPCs.getNearest(NPCid);
 				if (Shop != null) {
 					if (Shop.isReachable()) {
@@ -287,7 +287,7 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 								public boolean isValid() {
 									return Widgets.getOpenInterface() == 3824;
 								}
-							}, 1500);
+							}, 2500);
 						} else {
 							System.out.println("Walking to " + t2);
 							Walking.walkTo(t2);
@@ -300,15 +300,6 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 						}
 					} else {
 						if (Players.getMyPlayer().getLocation().equals(t1)) {
-							System.out.println("Walking to " + t1);
-							Walking.walkTo(t1);
-							conditionalSleep(new SleepCondition() {
-								@Override
-								public boolean isValid() {
-									return Players.getMyPlayer().getLocation().equals(t1);
-								}
-							}, 7000);
-						} else {
 							GameObject door = GameObjects.getTopAt(new Tile(2345, 3807));
 							if (door != null) {
 								System.out.println("Open door");
@@ -329,6 +320,15 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 									}
 								}, 7000);
 							}
+						} else {
+							System.out.println("Walking to " + t1);
+							Walking.walkTo(t1);
+							conditionalSleep(new SleepCondition() {
+								@Override
+								public boolean isValid() {
+									return Players.getMyPlayer().getLocation().equals(t1);
+								}
+							}, 7000);
 						}
 					}
 				}
@@ -344,37 +344,36 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 			conditionalSleep(new SleepCondition() {
 				@Override
 				public boolean isValid() {
-					return !Inventory.isFull();
+					return !Inventory.isFull() || !Inventory.Contains(Itemid);
 				}
 			}, 5000);
 		} else {
 			GameObject obj = GameObjects.getNearest(21301);
-			if (!Players.getMyPlayer().isMoving()) {
-				if (obj != null) {
-					if (obj.isReachable()) {
-						System.out.println("Open bank");
-						obj.interact("Bank");
+			if (obj != null) {
+				if (obj.isReachable()) {
+					System.out.println("Open bank");
+					obj.interact("Bank");
+					conditionalSleep(new SleepCondition() {
+						@Override
+						public boolean isValid() {
+							return Bank.isOpen();
+						}
+					}, 7000);
+				} else {
+					GameObject door = GameObjects.getTopAt(new Tile(2345, 3807));
+					if (door != null) {
+						System.out.println("Open door");
+						Packets.sendAction(502, door.uid, door.getX(), door.getY(), 21341, 1);
 						conditionalSleep(new SleepCondition() {
 							@Override
 							public boolean isValid() {
-								return Bank.isOpen();
+								return door == null;
 							}
-						}, 7000);
-					} else {
-						GameObject door = GameObjects.getTopAt(new Tile(2345, 3807));
-						if (door != null) {
-							System.out.println("Open door");
-							Packets.sendAction(502, door.uid, door.getX(), door.getY(), 21341, 1);
-							conditionalSleep(new SleepCondition() {
-								@Override
-								public boolean isValid() {
-									return door == null;
-								}
-							}, 2500);
-						}
+						}, 2500);
 					}
 				}
 			}
+
 		}
 	}
 
