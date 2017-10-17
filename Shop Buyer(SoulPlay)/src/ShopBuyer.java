@@ -19,8 +19,8 @@ import xobot.script.methods.GameObjects;
 import xobot.script.methods.NPCs;
 import xobot.script.methods.Packets;
 import xobot.script.methods.Players;
+import xobot.script.methods.Shop;
 import xobot.script.methods.Walking;
-import xobot.script.methods.Widgets;
 import xobot.script.methods.tabs.Inventory;
 import xobot.script.util.Time;
 import xobot.script.wrappers.Tile;
@@ -28,7 +28,7 @@ import xobot.script.wrappers.interactive.GameObject;
 import xobot.script.wrappers.interactive.NPC;
 
 @Manifest(authors = {
-		"Death Dead" }, name = "DD's Store Buyer", version = 1.1, description = "Buys items from stores in ::skill")
+		"Death Dead" }, name = "DD's Shop Buyer", version = 1.2, description = "Buys items from stores in ::skill")
 public class ShopBuyer extends ActiveScript implements PaintListener, MessageListener {
 
 	private int NPCid = 0;
@@ -42,6 +42,8 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 	private final Color color = new Color(19, 197, 255);
 
 	private boolean skillStore = false;
+
+	private String status = "";
 
 	private JComboBox<String> combo;
 
@@ -210,11 +212,12 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 	public void repaint(Graphics g) {
 		long runTime = System.currentTimeMillis() - startTime;
 		int perHour = (int) ((itemsBought) * 3600000D / (runTime));
-		int x = 10, y = 20;
+		int x = 10, y = 40;
 		g.setColor(color);
-		g.drawString("DD's Shop Buyer v1.1", x, y);
+		g.drawString("DD's Shop Buyer v1.2", x, y);
 		g.drawString("Runtime: " + formatTimeDHMS(runTime), x, y += 15);
 		g.drawString(itemtype + "(s) Bought: " + itemsBought + "(" + perHour + ")", x, y += 15);
+		g.drawString("Status: " + status, x, y += 15);
 	}
 
 	private static String formatTimeDHMS(final long time) {
@@ -225,32 +228,35 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 
 	private void buy() {
 		if (skillStore) {
-			if (Widgets.getOpenInterface() == 3824) {
-				int am = Inventory.Contains(Itemid) ? Inventory.getCount(Itemid) : 0;
-				System.out.println("Buy items");
-				Packets.sendAction(54, Itemid, slotid, 3900);
-				conditionalSleep(new SleepCondition() {
-					@Override
-					public boolean isValid() {
-						return Inventory.getCount(Itemid) > am;
-					}
-				}, 1500);
-				itemsBought += Inventory.getCount(Itemid) - am;
+			if (Shop.isOpen()) {
+				if (Shop.contains(Itemid) && Shop.getItem(Itemid).getStack() >= 10) {
+					int am = Inventory.Contains(Itemid) ? Inventory.getCount(Itemid) : 0;
+					status = "Buying " + itemtype + "(s)";
+					Packets.sendAction(54, Itemid, slotid, 3900);
+					conditionalSleep(new SleepCondition() {
+						@Override
+						public boolean isValid() {
+							return Inventory.getCount(Itemid) > am;
+						}
+					}, 1500);
+					itemsBought += Inventory.getCount(Itemid) - am;
+				}
 			} else {
 				Tile t1 = new Tile(2342, 3813);
-				NPC Shop = NPCs.getNearest(NPCid);
-				if (Shop != null) {
-					if (Shop.isReachable()) {
+				NPC npc = NPCs.getNearest(NPCid);
+				if (npc != null) {
+					if (npc.isReachable()) {
 						if (Players.getMyPlayer().getLocation().equals(t1)) {
-							Shop.interact("Trade");
+							status = "Trade NPC";
+							npc.interact("Trade");
 							conditionalSleep(new SleepCondition() {
 								@Override
 								public boolean isValid() {
-									return Widgets.getOpenInterface() == 3824;
+									return Shop.isOpen();
 								}
 							}, 1500);
 						} else {
-							System.out.println("Walking to " + t1);
+							status = "Walking to " + t1;
 							Walking.walkTo(t1);
 							conditionalSleep(new SleepCondition() {
 								@Override
@@ -261,40 +267,44 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 						}
 					}
 				}
+
 			}
 		} else {
-			if (Widgets.getOpenInterface() == 3824) {
-				int am = Inventory.Contains(Itemid) ? Inventory.getCount(Itemid) : 0;
-				System.out.println("Buy items");
-				Packets.sendAction(54, Itemid, slotid, 3900);
-				conditionalSleep(new SleepCondition() {
-					@Override
-					public boolean isValid() {
-						return Inventory.getCount(Itemid) > am;
-					}
-				}, 1500);
-				itemsBought += Inventory.getCount(Itemid) - am;
+			if (Shop.isOpen()) {
+				if (Shop.contains(Itemid) && Shop.getItem(Itemid).getStack() >= 10) {
+					int am = Inventory.Contains(Itemid) ? Inventory.getCount(Itemid) : 0;
+					status = "Buying " + itemtype + "(s)";
+					Packets.sendAction(54, Itemid, slotid, 3900);
+					conditionalSleep(new SleepCondition() {
+						@Override
+						public boolean isValid() {
+							return Inventory.getCount(Itemid) > am;
+						}
+					}, 1500);
+					itemsBought += Inventory.getCount(Itemid) - am;
+				}
 			} else {
 				Tile t1 = new Tile(2345, 3807);
 				Tile t2 = new Tile(2347, 3806);
-				NPC Shop = NPCs.getNearest(NPCid);
-				if (Shop != null) {
-					if (Shop.isReachable()) {
+				NPC npc = NPCs.getNearest(NPCid);
+				if (npc != null) {
+					if (npc.isReachable()) {
 						if (Players.getMyPlayer().getLocation().equals(t2)) {
-							Shop.interact("Trade");
+							status = "Trading NPC";
+							npc.interact("Trade");
 							conditionalSleep(new SleepCondition() {
 								@Override
 								public boolean isValid() {
-									return Widgets.getOpenInterface() == 3824;
+									return Shop.isOpen();
 								}
 							}, 2500);
 						} else {
-							System.out.println("Walking to " + t2);
+							status = "Walking to " + t2;
 							Walking.walkTo(t2);
 							conditionalSleep(new SleepCondition() {
 								@Override
 								public boolean isValid() {
-									return Players.getMyPlayer().getLocation().equals(t2);
+									return Players.getMyPlayer().getLocation().equals(t2) || !npc.isReachable();
 								}
 							}, 7000);
 						}
@@ -302,7 +312,7 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 						if (Players.getMyPlayer().getLocation().equals(t1)) {
 							GameObject door = GameObjects.getTopAt(new Tile(2345, 3807));
 							if (door != null) {
-								System.out.println("Open door");
+								status = "Open door at " + door.getLocation();
 								Packets.sendAction(502, door.uid, door.getX(), door.getY(), 21341, 1);
 								conditionalSleep(new SleepCondition() {
 									@Override
@@ -311,22 +321,22 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 									}
 								}, 2500);
 							} else {
-								System.out.println("Walking to " + t2);
+								status = "Walking to " + t2;
 								Walking.walkTo(t2);
 								conditionalSleep(new SleepCondition() {
 									@Override
 									public boolean isValid() {
-										return Players.getMyPlayer().getLocation().equals(t2);
+										return Players.getMyPlayer().getLocation().equals(t2) || !npc.isReachable();
 									}
 								}, 7000);
 							}
 						} else {
-							System.out.println("Walking to " + t1);
+							status = "Walking to " + t1;
 							Walking.walkTo(t1);
 							conditionalSleep(new SleepCondition() {
 								@Override
 								public boolean isValid() {
-									return Players.getMyPlayer().getLocation().equals(t1);
+									return Players.getMyPlayer().getLocation().equals(t1) || npc.isReachable();
 								}
 							}, 7000);
 						}
@@ -339,19 +349,19 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 
 	private void bank() {
 		if (Bank.isOpen()) {
-			System.out.println("Bank All");
-			Bank.depositAllExcept(995);
+			status = "Deposit all " + itemtype + "(s)";
+			Inventory.getItem(Itemid).interact("store all");
 			conditionalSleep(new SleepCondition() {
 				@Override
 				public boolean isValid() {
-					return !Inventory.isFull() || !Inventory.Contains(Itemid);
+					return !Inventory.isFull();
 				}
-			}, 5000);
+			}, 2000);
 		} else {
 			GameObject obj = GameObjects.getNearest(21301);
 			if (obj != null) {
 				if (obj.isReachable()) {
-					System.out.println("Open bank");
+					status = "Open bank";
 					obj.interact("Bank");
 					conditionalSleep(new SleepCondition() {
 						@Override
@@ -362,7 +372,7 @@ public class ShopBuyer extends ActiveScript implements PaintListener, MessageLis
 				} else {
 					GameObject door = GameObjects.getTopAt(new Tile(2345, 3807));
 					if (door != null) {
-						System.out.println("Open door");
+						status = "Open door at " + door.getLocation();
 						Packets.sendAction(502, door.uid, door.getX(), door.getY(), 21341, 1);
 						conditionalSleep(new SleepCondition() {
 							@Override
